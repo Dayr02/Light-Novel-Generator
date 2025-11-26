@@ -1,0 +1,9 @@
+Creates a shortcut that runs pythonw.exe(no console) with the script as parameter and set the icon
+$pythonw = "C:\Path\To\Python\pythonw.exe"
+$script = "C:\full\path\to\main.py"
+$desktop = [Environment]::GetFolderPath('Desktop')
+$lnk = (New-Object -ComObject WScript.Shell).CreateShortcut("$desktop\Light Novel Generator.lnk")
+$lnk.TargetPath = $pythonw
+$lnk.Arguments = "`"$script`""
+$lnk.IconLocation = "C:\full\path\to\icon.ico"
+$lnk.Save()
