@@ -21,9 +21,9 @@ class Config:
         
         # Generation Defaults
         'generation': {
-            'default_word_count': 3000,
-            'min_word_count': 1500,
-            'max_word_count': 6000,
+            'default_word_count': 5000,
+            'min_word_count': 3000,
+            'max_word_count': 8000,
             'chapter_temperature': 0.85,
             'world_temperature': 0.7,
             'character_temperature': 0.75
@@ -71,11 +71,11 @@ class Config:
                 'name': 'Classic Isekai',
                 'description': 'Power fantasy, game mechanics, adventure focus',
                 'temperature': 0.8,
-                'style_notes': 'Status windows, skill acquisition, world exploration, lighter tone'
+                'style_notes': 'World building, skill acquisition, world exploration, lighter tone'
             },
             'dark_fantasy': {
                 'name': 'Dark Fantasy',
-                'description': 'Gritty realism, moral ambiguity, high stakes',
+                'description': 'Gritty realism, moral ambiguity, high stakes, tactical/intense combat',
                 'temperature': 0.8,
                 'style_notes': 'Consequences matter, complex villains, mature themes'
             }

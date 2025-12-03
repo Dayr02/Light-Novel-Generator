@@ -230,6 +230,31 @@ Make it compelling and useful for storytelling.
             'parsed_suggestions': self._parse_character_expansion(result)
         }
     
+    def expand_creature_details(self, story_id: int, creature_id: int,
+                               expansion_focus: str = "complete bestiary entry") -> dict:
+        """
+        Use AI to expand creature/bestiary details
+        """
+        
+        creature = self.db.get_creature(creature_id)
+        story = self.db.get_story(story_id)
+        
+        prompt = self.templates.character_expansion_prompt(
+            character_name=creature['name'],
+            basic_info=creature,
+            story_context=story,
+            expansion_focus=expansion_focus
+        )
+        
+        print(f"Expanding creature details for {creature['name']}...")
+        result = self.ai.expand_character(prompt, temperature=0.75)
+        
+        return {
+            'raw_result': result,
+            'creature_name': creature['name'],
+            'parsed_suggestions': self._parse_character_expansion(result)
+        }
+    
     # Helper parsing methods
     
     def _parse_structure_suggestions(self, text: str) -> dict:

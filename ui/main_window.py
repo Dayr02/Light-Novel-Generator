@@ -3077,7 +3077,7 @@ class MainWindow:
         """Create a new story"""
         dialog = tk.Toplevel(self.window)
         dialog.title("Create New Story")
-        dialog.geometry("600x500")
+        dialog.geometry("600x600")
         dialog.transient(self.window)
         dialog.grab_set()
         
@@ -3085,8 +3085,24 @@ class MainWindow:
         theme = self.theme_manager.get_theme()
         dialog.configure(bg=theme['bg'])
         
-        frame = ttk.Frame(dialog, padding=30)
-        frame.pack(fill=tk.BOTH, expand=True)
+        # Create a scrollable canvas for the form content
+        canvas = tk.Canvas(dialog, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(dialog, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        frame = ttk.Frame(scrollable_frame, padding=20)
+        frame.pack(fill=tk.BOTH, expand=False)
         
         ttk.Label(
             frame,
@@ -3109,7 +3125,7 @@ class MainWindow:
         ).pack(anchor='w')
         
         synopsis_frame = ttk.Frame(frame)
-        synopsis_frame.pack(fill=tk.BOTH, expand=True, pady=(5, 10))
+        synopsis_frame.pack(fill=tk.BOTH, expand=False, pady=(5, 10))
         
         synopsis_scroll = ttk.Scrollbar(synopsis_frame)
         synopsis_scroll.pack(side=tk.RIGHT, fill=tk.Y)
@@ -3117,12 +3133,12 @@ class MainWindow:
         synopsis_text = tk.Text(
             synopsis_frame,
             width=60,
-            height=8,
+            height=6,
             font=('Arial', 10),
             wrap=tk.WORD,
             yscrollcommand=synopsis_scroll.set
         )
-        synopsis_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        synopsis_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=False)
         synopsis_scroll.config(command=synopsis_text.yview)
         
         # Genre
@@ -3154,15 +3170,17 @@ class MainWindow:
         style_entry.insert(0, "ReZero/Fate-inspired")
         style_entry.pack(fill=tk.X, pady=(0, 8))
         
+        # Button frame at the bottom (OUTSIDE scrollable area so always visible)
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+        
         def _create_and_open(title: str, synopsis: str, genre: str, ask_ai: bool = True,
-                     target_length: int | None = None, themes: str = "",
-                     tone: str = "", writing_style: str = ""):
+                             target_length: int | None = None, themes: str = "",
+                             tone: str = "", writing_style: str = ""):
             """
             Internal helper to create a story in the DB and open it in the UI.
-            Exposed as a small helper so tests can call the same logic without
-            instantiating the full dialog UI.
+            Delegate to the public helper to keep logic centralized.
             """
-            # Delegate to the public helper to keep logic centralized
             return self.create_and_open_story(
                 title=title,
                 synopsis=synopsis,
@@ -3173,68 +3191,6 @@ class MainWindow:
                 tone=tone,
                 writing_style=writing_style
             )
-
-            # Refresh story list in UI
-            try:
-                self.load_stories()
-            except Exception:
-                pass
-
-            # Select the newly created story and switch to Overview tab
-            try:
-                self.current_story_id = story_id
-                try:
-                    self.load_story_data(story_id)
-                except Exception:
-                    # load_story_data may rely on more UI state in tests; ignore
-                    pass
-                try:
-                    self.notebook.select(0)
-                except Exception:
-                    pass
-                try:
-                    self.update_status(f"Created story: {title}")
-                except Exception:
-                    pass
-            except Exception:
-                pass
-
-            # Inform the user
-            try:
-                messagebox.showinfo(
-                    "Success",
-                    f"Story '{title}' created successfully!\n\n"
-                    "You can now:\n"
-                    "• Add characters\n"
-                    "• Build the world\n"
-                    "• Create lore and power systems\n"
-                    "• Generate chapters"
-                )
-            except Exception:
-                pass
-
-            # Optionally run AI analysis
-            if ask_ai and synopsis:
-                try:
-                    if messagebox.askyesno(
-                        "AI World Generation",
-                        "Would you like AI to analyze your synopsis and suggest:\n"
-                        "• Key characters\n"
-                        "• World locations\n"
-                        "• Power systems\n"
-                        "• Story arcs\n\n"
-                        "This may take 1-2 minutes."
-                    ):
-                        try:
-                            self.current_story_id = story_id
-                            self.load_story_data(story_id)
-                            self.generate_from_synopsis()
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
-
-            return story_id
 
         def create():
             title = title_entry.get().strip()
@@ -3258,9 +3214,6 @@ class MainWindow:
                                        target_length=tl, themes=themes_val,
                                        tone=tone_val, writing_style=style_val)
             dialog.destroy()
-        
-        button_frame = ttk.Frame(frame)
-        button_frame.pack(pady=20)
 
         ttk.Button(
             button_frame,
@@ -7033,140 +6986,6 @@ class MainWindow:
         if protagonists:
             self.gen_pov_character.set(protagonists[0])
     
-    def new_story(self):
-        """Create a new story"""
-        dialog = tk.Toplevel(self.window)
-        dialog.title("Create New Story")
-        dialog.geometry("600x500")
-        dialog.transient(self.window)
-        dialog.grab_set()
-        
-        # Apply theme to dialog
-        theme = self.theme_manager.get_theme()
-        dialog.configure(bg=theme['bg'])
-        
-        frame = ttk.Frame(dialog, padding=30)
-        frame.pack(fill=tk.BOTH, expand=True)
-        
-        ttk.Label(
-            frame,
-            text="Create New Light Novel",
-            font=('Arial', 16, 'bold')
-        ).pack(pady=(0, 20))
-        
-        # Title
-        ttk.Label(frame, text="Story Title:", font=('Arial', 11, 'bold')).pack(anchor='w', pady=(10, 5))
-        title_entry = ttk.Entry(frame, width=60, font=('Arial', 11))
-        title_entry.pack(fill=tk.X, pady=(0, 10))
-        
-        # Synopsis
-        ttk.Label(frame, text="Synopsis:", font=('Arial', 11, 'bold')).pack(anchor='w', pady=(10, 5))
-        ttk.Label(
-            frame,
-            text="Brief description of your story (helps AI generate world structure)",
-            font=('Arial', 9, 'italic'),
-            foreground='gray'
-        ).pack(anchor='w')
-        
-        synopsis_frame = ttk.Frame(frame)
-        synopsis_frame.pack(fill=tk.BOTH, expand=True, pady=(5, 10))
-        
-        synopsis_scroll = ttk.Scrollbar(synopsis_frame)
-        synopsis_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        synopsis_text = tk.Text(
-            synopsis_frame,
-            width=60,
-            height=8,
-            font=('Arial', 10),
-            wrap=tk.WORD,
-            yscrollcommand=synopsis_scroll.set
-        )
-        synopsis_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        synopsis_scroll.config(command=synopsis_text.yview)
-        row += 1
-        
-        # Genre
-        ttk.Label(frame, text="Genre:", font=('Arial', 11, 'bold')).pack(anchor='w', pady=(10, 5))
-        genre_entry = ttk.Entry(frame, width=60, font=('Arial', 11))
-        genre_entry.insert(0, "Light Novel / Fantasy")
-        genre_entry.pack(fill=tk.X, pady=(0, 10))
-        
-        def create():
-            title = title_entry.get().strip()
-            if not title:
-                messagebox.showerror("Error", "Story title is required!")
-                return
-            
-            synopsis = synopsis_text.get('1.0', tk.END).strip()
-            genre = genre_entry.get().strip()
-            
-            story_id = self.db.create_story(
-                title=title,
-                synopsis=synopsis,
-                genre=genre,
-                writing_style="ReZero/Fate-inspired - Deep internal monologue, detailed sensory descriptions"
-            )
-            
-            self.load_stories()
-            dialog.destroy()
-
-            # Select the newly created story and switch to Overview tab so the
-            # user can use the save/edit/delete controls there.
-            try:
-                self.current_story_id = story_id
-                self.load_story_data(story_id)
-                try:
-                    self.notebook.select(0)
-                except Exception:
-                    pass
-                self.update_status(f"Created story: {title}")
-            except Exception:
-                pass
-
-            messagebox.showinfo(
-                "Success",
-                f"Story '{title}' created successfully!\n\n"
-                "You can now:\n"
-                "• Add characters\n"
-                "• Build the world\n"
-                "• Create lore and power systems\n"
-                "• Generate chapters"
-            )
-            
-            # Ask if they want AI to analyze synopsis
-            if synopsis and messagebox.askyesno(
-                "AI World Generation",
-                "Would you like AI to analyze your synopsis and suggest:\n"
-                "• Key characters\n"
-                "• World locations\n"
-                "• Power systems\n"
-                "• Story arcs\n\n"
-                "This may take 1-2 minutes."
-            ):
-                self.current_story_id = story_id
-                self.load_story_data(story_id)
-                self.generate_from_synopsis()
-        
-        button_frame = ttk.Frame(frame)
-        button_frame.pack(pady=20)
-        
-        ttk.Button(
-            button_frame,
-            text="Create Story",
-            command=create,
-            width=20
-        ).pack(side=tk.LEFT, padx=5)
-        
-        ttk.Button(
-            button_frame,
-            text="Cancel",
-            command=dialog.destroy,
-            width=20
-        ).pack(side=tk.LEFT, padx=5)
-        
-        title_entry.focus()
-    
     def select_story(self):
         """Prompt user to select a story"""
         if self.story_listbox.size() == 0:
@@ -8665,6 +8484,7 @@ class MainWindow:
                 self.current_arc_id = arc['id']
                 break
         self.load_arc_progression()
+        
     def save_progression(self):
         if not self.current_story_id or not hasattr(self, 'current_arc_id') or not self.current_arc_id:
             return

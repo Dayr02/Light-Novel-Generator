@@ -680,6 +680,106 @@ class DatabaseManager:
             ''', (story_id,))
         return [dict(row) for row in cursor.fetchall()]
     
+    # ============== BESTIARY OPERATIONS ==============
+
+    def add_creature(self, story_id, name, creature_type, threat_level, **kwargs):
+        """Add a creature/monster to bestiary"""
+        cursor = self.conn.cursor()
+        
+        defaults = {
+            'description': '',
+            'habitat': '',
+            'behavior': '',
+            'abilities': '',
+            'weaknesses': '',
+            'diet': '',
+            'lore': '',
+            'drops': ''
+        }
+        defaults.update(kwargs)
+        
+        # Store as structured data instead of JSON in lore table
+        creature_data = {
+            'type': creature_type,
+            'threat_level': threat_level,
+            'description': defaults['description'],
+            'habitat': defaults['habitat'],
+            'behavior': defaults['behavior'],
+            'abilities': defaults['abilities'],
+            'weaknesses': defaults['weaknesses'],
+            'diet': defaults['diet'],
+            'lore': defaults['lore'],
+            'drops': defaults['drops']
+        }
+        
+        cursor.execute('''
+            INSERT INTO lore (
+                story_id, category, title, content, importance
+            ) VALUES (?, ?, ?, ?, ?)
+        ''', (story_id, 'Bestiary', name, json.dumps(creature_data), 3))
+        
+        self.conn.commit()
+        return cursor.lastrowid
+    
+    def get_creatures(self, story_id):
+        """Get all creatures for a story"""
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            SELECT * FROM lore 
+            WHERE story_id = ? AND category = 'Bestiary'
+            ORDER BY title
+        ''', (story_id,))
+        return [dict(row) for row in cursor.fetchall()]
+    
+    def get_creature(self, creature_id):
+        """Get specific creature details"""
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM lore WHERE id = ?', (creature_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    
+    def update_creature(self, creature_id, name, creature_type, threat_level, **kwargs):
+        """Update creature details"""
+        cursor = self.conn.cursor()
+        
+        defaults = {
+            'description': '',
+            'habitat': '',
+            'behavior': '',
+            'abilities': '',
+            'weaknesses': '',
+            'diet': '',
+            'lore': '',
+            'drops': ''
+        }
+        defaults.update(kwargs)
+        
+        creature_data = {
+            'type': creature_type,
+            'threat_level': threat_level,
+            'description': defaults['description'],
+            'habitat': defaults['habitat'],
+            'behavior': defaults['behavior'],
+            'abilities': defaults['abilities'],
+            'weaknesses': defaults['weaknesses'],
+            'diet': defaults['diet'],
+            'lore': defaults['lore'],
+            'drops': defaults['drops']
+        }
+        
+        cursor.execute('''
+            UPDATE lore SET title = ?, content = ?
+            WHERE id = ?
+        ''', (name, json.dumps(creature_data), creature_id))
+        
+        self.conn.commit()
+    
+    def delete_creature(self, creature_id):
+        """Delete a creature"""
+        cursor = self.conn.cursor()
+        cursor.execute('DELETE FROM lore WHERE id = ? AND category = "Bestiary"', (creature_id,))
+        self.conn.commit()
+        
     # ============== CHAPTER OPERATIONS ==============
     
     def save_chapter(self, story_id, chapter_number, content, **kwargs):

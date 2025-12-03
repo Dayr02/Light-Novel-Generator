@@ -18,161 +18,138 @@ class PromptTemplates:
         target_word_count: int | None = None,
     ) -> str:
         """
-        Construct comprehensive chapter generation prompt
+        Construct optimized chapter generation prompt with token efficiency
         """
-        
-        # Format character information
-        char_section = "=== CHARACTERS ===\n\n"
-        
-        # Separate by importance
-        protagonists = [c for c in characters if c['role'].lower() in ['protagonist', 'main character']]
-        major_chars = [c for c in characters if c['importance'] >= 3 and c['role'].lower() not in ['protagonist', 'main character']]
-        supporting = [c for c in characters if c['importance'] < 3]
-        
+
+        # ===== SMART CHARACTER FILTERING =====
+        # Only include full details for highly important characters
+        protagonists = [c for c in characters if c['role'].lower() in ['protagonist', 'main character', 'deuteragonist']]
+        major_chars = [c for c in characters if c['importance'] >= 4 and c not in protagonists]
+        supporting = [c for c in characters if 2 <= c['importance'] < 4]
+        minor = [c for c in characters if c['importance'] < 2]
+
+        char_section = "=== KEY CHARACTERS ===\n\n"
+
+        # Protagonists - FULL details
         if protagonists:
             char_section += "PROTAGONIST(S):\n"
-            for char in protagonists:
-                char_section += f"\n• {char['name']} ({char['age']}, {char['gender']})\n"
-                if char['appearance']:
-                    char_section += f"  Appearance: {char['appearance']}\n"
-                if char['personality']:
-                    char_section += f"  Personality: {char['personality']}\n"
-                if char['abilities']:
-                    char_section += f"  Abilities: {char['abilities']}\n"
-                if char['background']:
-                    char_section += f"  Background: {char['background']}\n"
-                if char['motivations']:
-                    char_section += f"  Motivations: {char['motivations']}\n"
-                if char['voice_style']:
-                    char_section += f"  Speech Style: {char['voice_style']}\n"
-                if char['character_arc']:
-                    char_section += f"  Character Arc: {char['character_arc']}\n"
-        
+            for char in protagonists[:2]:  # Max 2 protagonists with full details
+                char_section += f"\n• {char['name']} ({char.get('age', '?')}, {char.get('gender', '?')})\n"
+                if char.get('appearance'): char_section += f"  Appearance: {char['appearance'][:200]}\n"
+                if char.get('personality'): char_section += f"  Personality: {char['personality'][:250]}\n"
+                if char.get('abilities'): char_section += f"  Abilities: {char['abilities'][:200]}\n"
+                if char.get('motivations'): char_section += f"  Motivations: {char['motivations'][:200]}\n"
+                if char.get('voice_style'): char_section += f"  Voice: {char['voice_style'][:150]}\n"
+                if char.get('character_arc'): char_section += f"  Arc: {char['character_arc'][:200]}\n"
+
+        # Major characters - CONDENSED details
         if major_chars:
             char_section += "\nMAJOR CHARACTERS:\n"
-            for char in major_chars:
-                char_section += f"\n• {char['name']} - {char['role']}\n"
-                if char['personality']:
-                    char_section += f"  Personality: {char['personality']}\n"
-                if char['relationships']:
-                    char_section += f"  Relationships: {char['relationships']}\n"
-                if char['abilities']:
-                    char_section += f"  Abilities: {char['abilities']}\n"
-        
-        if supporting:
-            char_section += "\nSUPPORTING CHARACTERS:\n"
-            for char in supporting:
-                char_section += f"• {char['name']} - {char['role']}"
-                if char['personality']:
-                    char_section += f": {char['personality'][:100]}"
+            for char in major_chars[:4]:  # Max 4 major chars
+                char_section += f"• {char['name']} ({char['role']})"
+                if char.get('personality'): char_section += f" - {char['personality'][:120]}"
+                if char.get('abilities'): char_section += f" | Powers: {char['abilities'][:100]}"
                 char_section += "\n"
-        
-        # Format world information
-        world_section = "\n=== WORLD SETTING ===\n\n"
+
+        # Supporting - NAME AND ROLE ONLY
+        if supporting:
+            char_section += "\nSUPPORTING: "
+            char_section += ", ".join([f"{c['name']} ({c['role']})" for c in supporting[:6]])
+            char_section += "\n"
+
+        # Skip minor characters entirely to save tokens
+
+        # ===== WORLD INFO - CONDENSED =====
+        world_section = "\n=== SETTING ===\n"
         if world_info:
-            for location in world_info:
-                world_section += f"• {location['name']} ({location['type']})\n"
-                if location['description']:
-                    world_section += f"  {location['description']}\n"
-                if location['culture']:
-                    world_section += f"  Culture: {location['culture']}\n"
-        
-        # Format power systems
-        power_section = "\n=== POWER SYSTEMS ===\n\n"
+            for loc in world_info[:5]:  # Max 5 locations
+                world_section += f"• {loc['name']} ({loc['type']})"
+                if loc.get('description'): world_section += f": {loc['description'][:150]}"
+                world_section += "\n"
+
+        # ===== POWER SYSTEMS - ESSENTIAL ONLY =====
+        power_section = "\n=== POWERS ===\n"
         if power_systems:
-            for system in power_systems:
-                power_section += f"• {system['name']}\n"
-                if system['description']:
-                    power_section += f"  {system['description']}\n"
-                if system['rules']:
-                    power_section += f"  Rules: {system['rules']}\n"
-                if system['limitations']:
-                    power_section += f"  Limitations: {system['limitations']}\n"
-        
-        # Format relevant lore
-        lore_section = "\n=== RELEVANT LORE ===\n\n"
+            for sys in power_systems[:3]:  # Max 3 systems
+                power_section += f"• {sys['name']}: {sys.get('description', '')[:120]}\n"
+                if sys.get('rules'): power_section += f"  Rules: {sys['rules'][:150]}\n"
+                if sys.get('limitations'): power_section += f"  Limits: {sys['limitations'][:100]}\n"
+
+        # ===== LORE - TOP 3 ONLY =====
+        lore_section = "\n=== KEY LORE ===\n"
         if lore:
-            for entry in lore[:5]:  # Top 5 most relevant
-                lore_section += f"• {entry['title']} ({entry['category']})\n"
-                if entry['content']:
-                    lore_section += f"  {entry['content'][:200]}...\n"
-        
-        # Format story progression
-        progression_section = "\n=== STORY PROGRESSION ===\n\n"
+            for entry in lore[:3]:
+                lore_section += f"• {entry['title']}: {entry.get('content', '')[:180]}\n"
+
+        # ===== PROGRESSION - CONCISE =====
+        progression_section = "\n=== STORY PROGRESS ===\n"
         if progression:
-            progression_section += "Current Arc Progression:\n"
-            # If progression is JSON object from arc_progression table, include it
-            # progression may be a dict already, otherwise parse JSON
             if isinstance(progression, str):
                 try:
                     progression = json.loads(progression)
                 except:
                     pass
+                
             if isinstance(progression, dict):
-                for k, v in progression.items():
-                    progression_section += f"- {k}: {v}\n\n"
-        
-        # Previous chapter context
+                # Only include most relevant fields
+                if progression.get('current_plot_points'):
+                    progression_section += f"Current: {progression['current_plot_points'][:250]}\n"
+                if progression.get('foreshadowing'):
+                    progression_section += f"Foreshadowing: {progression['foreshadowing'][:200]}\n"
+                if progression.get('unresolved_threads'):
+                    progression_section += f"Unresolved: {progression['unresolved_threads'][:200]}\n"
+
+        # ===== PREVIOUS CHAPTER - BRIEF =====
         previous_section = ""
         if previous_chapter_summary:
-            previous_section = f"\n=== PREVIOUS CHAPTER SUMMARY ===\n\n{previous_chapter_summary}\n"
-        
-        # Story style guidelines
+            previous_section = f"\n=== PREVIOUS CHAPTER ===\n{previous_chapter_summary[:500]}\n"
+
+        # ===== WRITING GUIDELINES - STREAMLINED =====
         style_section = f"""
-=== WRITING STYLE GUIDELINES ===
+    === STYLE ===
+    Genre: {story_info.get('genre', 'Light Novel')} | Tone: {story_info.get('tone', 'Varied')}
+    Tone: {story_info.get('tone', 'Varied based on scene')}
+    Style: {story_info.get('writing_style', 'ReZero/Fate-inspired')}
+    Themes: {story_info.get('themes', '')}
 
-Genre: {story_info.get('genre', 'Light Novel')}
-Tone: {story_info.get('tone', 'Varied based on scene')}
-Style: {story_info.get('writing_style', 'ReZero/Fate-inspired')}
-Themes: {story_info.get('themes', '')}
+    Style Requirements:
+    - Use first-person or close third-person perspective for deep character interiority
+    - Include internal monologue and character thoughts
+    - Balance description, action, and dialogue naturally
+    - Use sensory details to immerse the reader
+    - Employ strategic pacing - slow for emotional moments, fast for action
+    - Include scene transitions with "◇◇◇" or similar markers
+    - Write dialogue that reflects each character's unique voice
+    - Show character emotions through actions and reactions, not just statements
+    - Build tension progressively within the chapter
+    - End with a hook or emotional beat that compels reading the next chapter
+    """
 
-Style Requirements:
-- Use first-person or close third-person perspective for deep character interiority
-- Include internal monologue and character thoughts
-- Balance description, action, and dialogue naturally
-- Use sensory details to immerse the reader
-- Employ strategic pacing - slow for emotional moments, fast for action
-- Include scene transitions with "◇◇◇" or similar markers
-- Write dialogue that reflects each character's unique voice
-- Show character emotions through actions and reactions, not just statements
-- Build tension progressively within the chapter
-- End with a hook or emotional beat that compels reading the next chapter
-"""
-        
-        # Main generation instruction
-        # If caller provided a target word count, use it. Otherwise fall back
-        # to the original guidance range.
-        word_instruction = (
-            f"7. Target length: approximately {target_word_count} words"
-            if target_word_count else
-            "7. Ranges between 2500-4000 words"
-        )
+        # ===== GENERATION INSTRUCTION - CLEAR AND DIRECT =====
+        word_target = target_word_count if target_word_count else 3500
 
         main_instruction = f"""
-=== CHAPTER {chapter_number} GENERATION TASK ===
+    === WRITE CHAPTER {chapter_number} ===
 
-Title: {story_info.get('title', 'Untitled')}
-Chapter: {chapter_number}
+    Story: {story_info.get('title', 'Untitled')}
 
-PLOT DIRECTIVE FOR THIS CHAPTER:
-{plot_directive}
+    PLOT DIRECTIVE:
+    {plot_directive}
 
-INSTRUCTIONS:
-Write a complete Chapter {chapter_number} that:
-1. Follows the plot directive naturally
-2. Stays true to all established characters, world rules, and lore
-3. Maintains consistency with previous events
-4. Develops characters and relationships meaningfully
-5. Advances the overall story arc
-        6. Creates an engaging, immersive reading experience
-        {word_instruction}
-8. Includes proper scene breaks and pacing
-9. Ends with a compelling hook or resolution
+    INSTRUCTIONS:
+    1. Write a COMPLETE {word_target}-word chapter
+    2. Follow the plot directive naturally
+    3. Stay true to character voices and world rules
+    4. Include internal thoughts and sensory details
+    5. Create emotional engagement
+    6. Build to a compelling chapter ending
+    7. Use scene breaks (◇◇◇) appropriately
+    8. DO NOT stop early - write the FULL target length
 
-Begin writing Chapter {chapter_number} now:
-"""
-        
-        # Combine all sections
+    Begin Chapter {chapter_number}:
+    """
+
+        # ===== COMBINE SECTIONS =====
         full_prompt = (
             char_section +
             world_section +
@@ -183,15 +160,16 @@ Begin writing Chapter {chapter_number} now:
             style_section +
             main_instruction
         )
-        
+
         return full_prompt
     
+    @staticmethod
     @staticmethod
     def world_generation_prompt(
         story_info: dict,
         existing_world: list,
-        generation_focus: str,
-        specific_request: str
+        generation_focus: str = "World Building",
+        specific_request: str = "Generate comprehensive world-building details"
     ) -> str:
         """
         Construct world generation/expansion prompt
@@ -235,11 +213,12 @@ Generate the requested world details now:
         return prompt
     
     @staticmethod
+    @staticmethod
     def character_expansion_prompt(
         character_name: str,
         basic_info: dict,
         story_context: dict,
-        expansion_focus: str
+        expansion_focus: str = "complete profile"
     ) -> str:
         """
         Construct character detail expansion prompt

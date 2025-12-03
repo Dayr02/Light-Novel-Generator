@@ -69,7 +69,7 @@ def print_banner():
     banner = """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║           📚 Light Novel Story Generator 📚                 ║
+║           📚 Light Novel Story Generator 📚                  ║
 ║                                                              ║
 ║                Story/Chapter Generation                      ║
 ║                                                              ║
