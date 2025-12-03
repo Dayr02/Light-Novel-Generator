@@ -81,36 +81,37 @@ Sidebar: Quick story selection
 Status Bar: Current status and AI connection indicator
 
 📁 Project Structure
-LightNovelGenerator/
-├── main.py                    # Application entry point
-├── setup.py                   # Setup helper script
-├── test_complete.py           # System tests
-├── config.json                # Configuration (auto-created)
-│
-├── database/
-│   ├── __init__.py
-│   └── db_manager.py          # Database operations
-│
-├── ai/
-│   ├── __init__.py
-│   ├── ollama_client.py       # Ollama AI client
-│   ├── prompt_templates.py    # Generation prompts
-│   └── world_generator.py     # World building AI
-│
-├── ui/
-│   ├── __init__.py
-│   ├── main_window.py         # Main application window
-│   └── theme_manager.py       # Light/Dark themes
-│
-├── utils/
-│   ├── __init__.py
-│   └── config.py              # Configuration management
-│
-├── models/
-│   └── __init__.py            # (For future expansion)
-│
-└── data/
-    └── lightnovel.db          # SQLite database (auto-created)
+LightNovelGenerator/  
+├── main.py                    # Application entry point  
+├── setup.py                   # Setup helper script  
+├── test_complete.py           # System tests  
+├── config.json                # Configuration (auto-created)  
+│  
+├── database/  
+│   ├── __init__.py  
+│   └── db_manager.py          # Database operations  
+│  
+├── ai/  
+│   ├── __init__.py  
+│   ├── ollama_client.py       # Ollama AI client  
+│   ├── prompt_templates.py    # Generation prompts  
+│   └── world_generator.py     # World building AI  
+│  
+├── ui/  
+│   ├── __init__.py  
+│   ├── main_window.py         # Main application window  
+│   └── theme_manager.py       # Light/Dark themes  
+│  
+├── utils/  
+│   ├── __init__.py  
+│   └── config.py              # Configuration management  
+│  
+├── models/  
+│   └── __init__.py            # (For future expansion)  
+│  
+└── data/  
+    └── lightnovel.db          # SQLite database (auto-created)  
+  
 🚀 Installation
 Prerequisites
 
